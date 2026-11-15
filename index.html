@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MappaMente OFFLINE - Mappe, Testi, Domande e Slide</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,Arial;background:#FFF7ED;color:#1e293b}
+header{background:#7c3aed;color:white;padding:18px 20px} header h1{margin:0;font-size:26px} header p{margin:6px 0 0;opacity:.9}
+main{max-width:1000px;margin:0 auto;padding:18px}
+.card{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+textarea{width:100%;min-height:160px;border:2px solid #ddd6fe;border-radius:12px;padding:12px;font-size:15px}
+button{border:0;border-radius:999px;padding:11px 18px;font-weight:700;cursor:pointer}
+.primary{background:#7c3aed;color:white} .secondary{background:#f1f5f9}
+input,select{padding:10px;border:1px solid #cbd5e1;border-radius:10px;width:100%}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:600px){.grid{grid-template-columns:1fr}}
+#map{border:2px dashed #c4b5fd;border-radius:16px;height:520px;position:relative;overflow:hidden;background:#faf5ff;touch-action:none;user-select:none}
+.node{position:absolute;min-width:110px;max-width:190px;padding:10px 12px;border-radius:14px;color:white;font-weight:700;text-align:center;cursor:grab;box-shadow:0 4px 12px rgba(0,0,0,.18);font-size:13px;touch-action:none;z-index:2}
+.node:active{cursor:grabbing;z-index:10;transform:scale(1.03)}
+.node.center{background:#7c3aed;z-index:3;font-size:15px}
+.node small{display:block;font-weight:400;font-size:11px;opacity:.9;margin-top:4px;pointer-events:none}
+.node span{pointer-events:none}
+svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.how{background:#ecfdf5}
+ol{line-height:1.7}
+.badge{display:inline-block;background:#ddd6fe;color:#4c1d95;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.richiestaBox{background:#f5f3ff;border:2px solid #a78bfa;border-radius:14px;padding:14px;margin-top:14px}
+.richiestaRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.richiestaRow input{flex:1;min-width:220px;font-size:15px;padding:13px;border-radius:999px;border:2px solid #a78bfa}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chips button{background:white;border:1px solid #c4b5fd;padding:7px 12px;font-size:12px;border-radius:999px}
+#capito{display:none;margin-top:10px;background:#ecfdf5;border:1px solid #86efac;border-radius:10px;padding:10px;font-size:13px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.tabs button{padding:10px 16px;border:2px solid #ddd6fe;background:white}
+.tabs button.attivo{background:#111827;color:white;border-color:#111827}
+#testoOut{display:none;background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:16px;white-space:pre-wrap;line-height:1.75;font-size:15px}
+#domandeOut{display:none}
+.quizQ{background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:12px;margin-bottom:10px}
+.slide{background:#111827;color:white;border-radius:18px;padding:36px;min-height:380px;display:flex;flex-direction:column;justify-content:center}
+.slide h3{margin:0 0 14px;font-size:34px}
+.slide p{font-size:19px;line-height:1.6}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.dots button{width:12px;height:12px;border-radius:50%;padding:0;background:#cbd5e1}
+.dots button.on{background:#7c3aed;width:28px;border-radius:999px}
+.slideNav{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px}
+#map{display:flex;justify-content:center;align-items:center}
+#canvas{position:relative;width:1000px;height:500px;flex-shrink:0}
+
+</style></head>
+<body>
+<header><h1>🧠 MappaMente <span style="display:inline-block;background:#16a34a;color:white;padding:4px 10px;border-radius:999px;font-size:12px">● OFFLINE</span></h1><p>Funziona SENZA internet. Nessun link, nessun server. Solo questo file.</p></header>
+<main>
+<div class="card how"><b>Come si usa:</b> <span class="badge">I rami si muovono</span><ol><li>Incolla il testo e premi <b>Genera la mappa</b></li><li><b>Tieni premuto</b> su un nodo e <b>trascinalo</b> dove vuoi — le linee seguono il nodo</li><li><b>Doppio click</b> su un nodo per modificare il testo</li><li>Premi <b>Stampa / Salva PDF</b> per salvarla</li></ol></div>
+<div class="card">
+<h2 style="margin-top:0">1. Incolla il testo della pagina</h2>
+<textarea id="testo" placeholder="Incolla qui il testo della pagina del libro..."></textarea>
+<div class="richiestaBox">
+<b>2. Cosa vuoi fare? ✍️ Scrivilo con parole tue</b>
+<p style="margin:4px 0 0;color:#475569;font-size:13px">Fa davvero testi, domande e slide — non solo mappe. Tutto offline.</p>
+<div class="richiestaRow">
+<input id="richiesta" placeholder="Es: fammi un testo e le domande..." onkeydown="if(event.key==='Enter') eseguiRichiesta()">
+<button class="primary" onclick="eseguiRichiesta()">✨ Fai quello che ho chiesto →</button>
+</div>
+<div class="chips">
+<button onclick="mettiRichiesta('fammi la mappa')">🗺️ Mappa</button>
+<button onclick="mettiRichiesta('fammi un testo')">📝 Testo</button>
+<button onclick="mettiRichiesta('fammi un riassunto')">📄 Riassunto</button>
+<button onclick="mettiRichiesta('fammi le domande')">❓ Domande</button>
+<button onclick="mettiRichiesta('fammi le slide')">🎞️ Slide</button>
+<button onclick="mettiRichiesta('fammi mappa + testo + domande + slide')">✨ Tutto</button>
+<button onclick="mettiRichiesta('fammela corta')">⚡ Corta</button>
+</div>
+<div id="capito"></div>
+</div>
+<div class="grid" style="margin-top:12px">
+<div><label>Titolo mappa</label><input id="titolo" value="La mia mappa"></div>
+<div><label>Numero rami</label><select id="rami"><option>4</option><option>3</option><option>5</option><option>6</option></select></div>
+</div>
+<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+<button class="primary" onclick="genera()">✨ Genera la mappa</button>
+<button class="secondary" onclick="esempio()">Prova con esempio</button>
+<button class="secondary" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
+<button class="secondary" onclick="resetPos()">↺ Rimetti in ordine</button>
+</div>
+</div>
+<div class="card"><h2 style="margin-top:0">3. Il tuo risultato <span style="font-size:12px;color:#16a34a">● OFFLINE</span></h2>
+<div class="tabs" id="tabs">
+<button data-tab="mappa" class="attivo" onclick="mostraTab('mappa')">🗺️ Mappa</button>
+<button data-tab="testo" onclick="mostraTab('testo')">📝 Testo</button>
+<button data-tab="domande" onclick="mostraTab('domande')">❓ Domande</button>
+<button data-tab="slide" onclick="mostraTab('slide')">🎞️ Slide</button>
+</div>
+<p id="tabInfo" style="color:#475569;font-size:13px">Stai vedendo: <b>Mappa</b> — OFFLINE, senza internet.</p>
+<div id="mappaCard"><h3 style="margin:0 0 10px">🗺️ Mappa al centro</h3> <span style="font-size:13px;color:#64748b;font-weight:400">— trascina i nodi!</span></h2>
+<div id="map"><div id="canvas"><svg id="lines"></svg></div></div>
+<p id="status" style="font-size:13px;color:#16a34a;font-weight:700">✅ Trascinamento attivo: tieni premuto e muovi.</p>
+</div>
+<div id="testoOut"></div>
+<div id="domandeOut"></div>
+<div id="slidesCard" style="display:none"><div id="slides"></div><div class="dots" id="dots"></div><div class="slideNav"><button class="secondary" onclick="prevSlide()">← Indietro</button><span id="slideNum"></span><button class="primary" onclick="nextSlide()">Avanti →</button></div></div>
+</div>
+<div class="card"><h2>3. Consigli per studiare</h2><ul><li>Leggi la mappa ad alta voce 2 volte</li><li>Copri i rami e prova a ricordarli</li><li>Ripeti dopo 1 giorno, poi dopo 3 giorni</li></ul></div>
+
+</main>
+<script>
+let nodes=[]; let outputTipo='mappa'; let slideIdx=0; let testoGenerato=''; let focusKeyword='';
+let dragging=null, dragOffsetX=0, dragOffsetY=0, dragEl=null;
+let moved=false;
+const mapEl=document.getElementById('map'); const canvas=document.getElementById('canvas');
+const svg=document.getElementById('lines');
+function esempio(){document.getElementById('testo').value="La Rivoluzione Francese iniziò nel 1789 in Francia. Le cause furono la crisi economica, le tasse alte e la fame del popolo. Il popolo assaltò la Bastiglia il 14 luglio 1789. Le idee furono libertà, uguaglianza e fraternità. Le conseguenze furono la fine della monarchia assoluta e la Dichiarazione dei diritti dell'uomo. Napoleone prese poi il potere nel 1799.";document.getElementById('titolo').value="Rivoluzione Francese";genera();}
+function genera(){
+ let t=document.getElementById('testo').value.trim();
+ if(t.length<50){alert("Incolla un po' più di testo, almeno 3-4 frasi!");return;}
+ let titolo=document.getElementById('titolo').value||"La mia mappa";
+ let nRami=parseInt(document.getElementById('rami').value);
+ let frasi=t.split(/(?<=[.!?])\s+/).filter(s=>s.length>15);
+ let colori=["#dc2626","#ea580c","#ca8a04","#16a34a","#2563eb","#7c3aed"];
+ nodes=[{x:380,y:210,text:titolo,center:true}];
+ for(let i=0;i<Math.min(nRami,frasi.length);i++){
+   let f=frasi[i].replace(/[.!?]$/,'');
+   let parole=f.split(' ').slice(0,5).join(' ');
+   let ang=(i/Math.max(1,Math.min(nRami,frasi.length)))*Math.PI*2 - Math.PI/2;
+   let x=380+Math.cos(ang)*260, y=210+Math.sin(ang)*140;
+   // clamp
+   x=Math.max(5,Math.min(780,x)); y=Math.max(5,Math.min(440,y));
+   nodes.push({x,y,text:parole,sub:f,color:colori[i%colori.length],parent:0});
+   let idx2=i+Math.min(nRami,frasi.length);
+   if(frasi[idx2]){ let f2=frasi[idx2]; let a2=ang+0.4; let x2=380+Math.cos(a2)*360, y2=210+Math.sin(a2)*180; x2=Math.max(5,Math.min(780,x2)); y2=Math.max(5,Math.min(440,y2)); nodes.push({x:x2,y:y2,text:f2.split(' ').slice(0,4).join(' '),color:colori[i%colori.length],small:true,parent:nodes.length-1}); }
+ }
+ disegna(); generaTesto(); generaDomande(); if(outputTipo==='slide') mostraSlide();
+}
+
+function mettiRichiesta(t){ document.getElementById('richiesta').value=t; eseguiRichiesta(); }
+function eseguiRichiesta(){
+  let raw=document.getElementById('richiesta').value||''; let r=raw.toLowerCase();
+  if(!r.trim()){ alert('Scrivi prima cosa vuoi fare, es: fammi un testo'); return; }
+  let vuole={mappa:false,testo:false,domande:false,slide:false}; let capito=[];
+  if(r.includes('mappa')||r.includes('schema')){ vuole.mappa=true; capito.push('🗺️ Mappa'); }
+  if(r.includes('testo')||r.includes('tema')||r.includes('composizione')||r.includes('spiegazione')||r.includes('spiegami')){ vuole.testo=true; capito.push('📝 Testo'); }
+  if(r.includes('riassunto')||r.includes('riassumi')){ vuole.testo=true; capito.push('📄 Riassunto / Testo'); }
+  if(r.includes('domand')||r.includes('quiz')||r.includes('interrog')||r.includes('verifica')||r.includes('test')||r.includes('esercizi')){ vuole.domande=true; capito.push('❓ Domande'); }
+  if(r.includes('slide')||r.includes('powerpoint')||r.includes('presentazione')||r.includes('presentare')){ vuole.slide=true; capito.push('🎞️ Slide'); }
+  if(r.includes('tutto')||r.includes('mappa +')||r.includes('+ testo')){ vuole={mappa:true,testo:true,domande:true,slide:true}; capito.push('✨ Tutto'); }
+  if(!vuole.mappa && !vuole.testo && !vuole.domande && !vuole.slide){ vuole.mappa=true; capito.push('🗺️ Mappa'); }
+  if(r.includes('solo le cause')){ focusKeyword='caus'; capito.push('🎯 Solo cause'); }
+  if(r.includes('solo le conseguenze')){ focusKeyword='conseguenz'; capito.push('🎯 Solo conseguenze'); }
+  let tipi=Object.keys(vuole).filter(k=>vuole[k]);
+  let c=document.getElementById('capito'); c.style.display='block';
+  c.innerHTML='<b>✅ Ho capito (offline):</b> '+capito.join(' • ')+'<br><span style="color:#475569">Richiesta: “'+raw+'” — ti mostro proprio questo.</span>';
+  genera();
+  if(tipi.length===1) mostraTab(tipi[0]); else { mostraTab(tipi[0]); document.getElementById('tabInfo').innerHTML='Hai chiesto più cose: <b>'+tipi.join(' + ')+'</b> — usa i pulsanti sopra.'; }
+}
+function mostraTab(tab){
+  outputTipo=tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('attivo', b.dataset.tab===tab));
+  document.getElementById('mappaCard').style.display = tab==='mappa' ? 'block' : 'none';
+  document.getElementById('testoOut').style.display = tab==='testo' ? 'block' : 'none';
+  document.getElementById('slidesCard').style.display = tab==='slide' ? 'block' : 'none';
+  document.getElementById('domandeOut').style.display = tab==='domande' ? 'block' : 'none';
+  let nomi={mappa:'Mappa',testo:'Testo',domande:'Domande',slide:'Slide'};
+  document.getElementById('tabInfo').innerHTML='Stai vedendo: <b>'+nomi[tab]+'</b> — OFFLINE.';
+  if(tab==='slide'){ slideIdx=0; mostraSlide(); }
+}
+function generaTesto(){
+  let t=document.getElementById('testo').value.trim(); let frasi=t.split(/(?<=[.!?])\s+/).filter(s=>s.length>12);
+  let titolo=document.getElementById('titolo').value||"La mia mappa";
+  let intro=frasi[0]||''; let sviluppo=frasi.slice(1, Math.min(7, frasi.length)).join('. ') + '.'; let conclusione=frasi[frasi.length-1]||'';
+  testoGenerato="📝 TESTO - "+titolo+"\n\nINTRODUZIONE\n"+intro+".\n\nSVILUPPO\n"+sviluppo+"\n\nCONCLUSIONE\n"+conclusione+".\n\n—\nPunti chiave:\n"+nodes.filter(n=>n.parent===0).map((n,i)=>(i+1)+". "+n.text).join("\n");
+  document.getElementById('testoOut').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">📝 Testo / Riassunto</h3><button class="secondary" onclick="copiaTesto()">📋 Copia testo</button></div><pre style="white-space:pre-wrap;font-family:inherit;margin:12px 0 0">'+testoGenerato.replace(/</g,'&lt;')+'</pre>';
+}
+function copiaTesto(){ navigator.clipboard.writeText(testoGenerato).then(()=>alert('Testo copiato!')); }
+function generaDomande(){
+  let rami=nodes.filter(n=>n.parent===0);
+  let domande=rami.slice(0,5).map((r,i)=>{ let q=i===0?"Quando è successo / di cosa parla il testo?":i===1?"Quali sono le cause di: “"+r.text+"”?":i===2?"Spiega con parole tue: “"+r.text+"”.":i===3?"Quali sono le conseguenze di: “"+r.text+"”?":"Perché è importante: “"+r.text+"”?"; return {q,a:r.sub||r.text}; });
+  let box=document.getElementById('domandeOut');
+  box.innerHTML='<h3 style="margin-top:0">❓ Domande per interrogarti</h3><p style="color:#475569;font-size:13px">Rispondi ad alta voce, poi premi Mostra risposta. Non è una mappa: sono domande vere.</p>'+domande.map((d,i)=>'<div class="quizQ"><b>Domanda '+(i+1)+': '+d.q+'</b><br><button class="secondary" onclick="this.nextElementSibling.style.display=\'block\';this.style.display=\'none\'">👀 Mostra risposta</button><div style="display:none;margin-top:6px;background:white;padding:8px;border-radius:8px">'+d.a+'</div></div>').join('')+'<div class="quizQ"><b>Vero o Falso: il testo parla di “'+(nodes[0]?nodes[0].text:'')+'”.</b><br><button class="secondary" onclick="this.nextElementSibling.style.display=\'block\';this.style.display=\'none\'">👀 Mostra risposta</button><div style="display:none;margin-top:6px">Vero</div></div>';
+}
+function mostraSlide(){
+  let rami=nodes.filter(n=>n.parent===0);
+  let slides=[{titolo: nodes[0]?nodes[0].text:"", testo:"Presentazione - "+(document.getElementById('titolo').value||"")}];
+  rami.forEach((r,idx)=>{ let figli=nodes.filter(n=>n.parent===nodes.indexOf(r)).map(n=>n.text).join(" • "); slides.push({titolo:(idx+1)+". "+r.text, testo:(r.sub||r.text)+(figli?"\n\nDettagli: "+figli:"")}); });
+  slides.push({titolo:"✅ Conclusione", testo:"Punti chiave da ricordare. Ripeti 2 volte ad alta voce."});
+  let s=slides[Math.max(0,Math.min(slideIdx,slides.length-1))]; let idx=Math.max(0,Math.min(slideIdx,slides.length-1));
+  document.getElementById('slides').innerHTML=`<div class="slide"><div style="opacity:.7;font-size:13px">MappaMente OFFLINE • Slide ${idx+1} di ${slides.length}</div><h3>${s.titolo}</h3><p style="white-space:pre-wrap">${s.testo}</p></div>`;
+  document.getElementById('dots').innerHTML=slides.map((_,i)=>`<button class="${i===idx?'on':''}" onclick="goSlide(${i})"></button>`).join('');
+  document.getElementById('slideNum').textContent=`Slide ${idx+1} di ${slides.length}`; window._slidesLen=slides.length;
+}
+function nextSlide(){ slideIdx=Math.min((window._slidesLen||1)-1, slideIdx+1); mostraSlide(); }
+function prevSlide(){ slideIdx=Math.max(0, slideIdx-1); mostraSlide(); }
+function goSlide(i){ slideIdx=i; mostraSlide(); }
+
+function resetPos(){genera();}
+function updateLines(){
+ svg.innerHTML='';
+ nodes.forEach((n,idx)=>{
+   if(n.parent!==undefined && nodes[n.parent]){
+     let p=nodes[n.parent];
+     let line=document.createElementNS("http://www.w3.org/2000/svg","line");
+     line.setAttribute("x1",p.x+75); line.setAttribute("y1",p.y+24);
+     line.setAttribute("x2",n.x+70); line.setAttribute("y2",n.y+24);
+     line.setAttribute("stroke",n.color||"#7c3aed"); line.setAttribute("stroke-width","3"); line.setAttribute("stroke-linecap","round");
+     svg.appendChild(line);
+   }
+ });
+}
+function disegna(){
+ mapEl.querySelectorAll('.node').forEach(e=>e.remove());
+ nodes.forEach((n,idx)=>{
+   let d=document.createElement('div'); d.className='node'+(n.center?' center':''); d.style.left=n.x+'px'; d.style.top=n.y+'px'; if(n.color) d.style.background=n.color;
+   d.innerHTML='<span>'+n.text+'</span>'+(n.sub?'<small>'+n.sub.slice(0,70)+'</small>':'');
+   d.dataset.idx=idx;
+   d.addEventListener('pointerdown', (e)=>{
+     dragging=idx; dragEl=d; moved=false;
+     let rect=mapEl.getBoundingClientRect();
+     dragOffsetX=e.clientX-rect.left-n.x; dragOffsetY=e.clientY-rect.top-n.y;
+     d.setPointerCapture(e.pointerId);
+     e.preventDefault();
+   });
+   d.addEventListener('dblclick', ()=>{let nt=prompt("Modifica nodo:",n.text); if(nt){n.text=nt; disegna();}});
+   mapEl.appendChild(d);
+ });
+ updateLines();
+}
+mapEl.addEventListener('pointermove', (e)=>{
+ if(dragging===null) return;
+ let rect=mapEl.getBoundingClientRect();
+ let nx=e.clientX-rect.left-dragOffsetX;
+ let ny=e.clientY-rect.top-dragOffsetY;
+ nx=Math.max(0,Math.min(rect.width-110,nx)); ny=Math.max(0,Math.min(rect.height-50,ny));
+ nodes[dragging].x=nx; nodes[dragging].y=ny;
+ if(dragEl){dragEl.style.left=nx+'px'; dragEl.style.top=ny+'px';}
+ moved=true;
+ updateLines();
+});
+function endDrag(e){ if(dragging!==null){ try{dragEl.releasePointerCapture(e.pointerId);}catch(_){} dragging=null; dragEl=null; } }
+mapEl.addEventListener('pointerup', endDrag);
+mapEl.addEventListener('pointercancel', endDrag);
+esempio();
+</script></body></html>
